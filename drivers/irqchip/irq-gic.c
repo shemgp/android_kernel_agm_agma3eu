@@ -319,6 +319,9 @@ static void gic_show_resume_irq(struct gic_chip_data *gic)
 			name = "stray irq";
 		else if (desc->action && desc->action->name){
 			name = desc->action->name;
+			#ifdef CONFIG_HISENSE_WAKEUP_CNT
+                    desc->wakeup_cnt++;
+                    #endif
 			}
 
 		pr_warning("%s: %d triggered %s\n", __func__,

@@ -1259,7 +1259,7 @@ static int do_inquiry(struct fsg_common *common, struct fsg_buffhd *bh)
 			CONFIG_USB_CDROM_NAME, CDROM_FUNCTION_NAME);
 	} else {
 		sprintf(buf+8, "%-8s%-16s",
-			CONFIG_HIS_VENDOR_NAME, fsg_string_interface);
+			CONFIG_HISENSE_VENDOR_NAME, fsg_string_interface);
 	}
 	return 36;
 }

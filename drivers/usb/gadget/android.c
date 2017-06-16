@@ -82,7 +82,7 @@ MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("1.0");
-extern int meid_is_null_flag; 
+extern int meid_is_null_flag;
 static const char longname[] = "Gadget Android";
 
 /* Default vendor and product IDs, overridden by userspace */
@@ -3521,10 +3521,10 @@ static int android_bind(struct usb_composite_dev *cdev)
 		return id;
 	strings_dev[STRING_PRODUCT_IDX].id = id;
 	device_desc.iProduct = id;
-	strlcpy(manufacturer_string, CONFIG_HIS_VENDOR_NAME,
+	strlcpy(manufacturer_string, CONFIG_HISENSE_VENDOR_NAME,
 		sizeof(manufacturer_string) - 1);
-	strlcpy(product_string, CONFIG_HIS_VENDOR_NAME, sizeof(product_string) - 1);
-	strlcpy(serial_string, CONFIG_HIS_PRODUCT_NAME, sizeof(serial_string) - 1);
+	strlcpy(product_string, CONFIG_HISENSE_VENDOR_NAME, sizeof(product_string) - 1);
+	strlcpy(serial_string, CONFIG_HISENSE_PRODUCT_NAME, sizeof(serial_string) - 1);
 	id = usb_string_id(cdev);
 	if (id < 0)
 		return id;

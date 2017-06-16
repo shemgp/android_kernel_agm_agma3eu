@@ -85,6 +85,9 @@ static void desc_set_defaults(unsigned int irq, struct irq_desc *desc, int node,
 	desc->handle_irq = handle_bad_irq;
 	desc->depth = 1;
 	desc->irq_count = 0;
+	#ifdef CONFIG_HISENSE_WAKEUP_CNT
+       desc->wakeup_cnt = 0;
+       #endif
 	desc->irqs_unhandled = 0;
 	desc->name = NULL;
 	desc->owner = owner;

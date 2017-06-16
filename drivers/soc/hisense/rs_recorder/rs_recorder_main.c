@@ -81,7 +81,7 @@ struct rs_module_ops rs_dump_ops_set[] = {
 
 static char * rs_get_product_name(void)
 {
-	return (char *)CONFIG_HIS_PRODUCT_NAME;
+	return (char *)CONFIG_HISENSE_PRODUCT_NAME;
 }
 
 static void rs_get_kernel_ver(char *buf)

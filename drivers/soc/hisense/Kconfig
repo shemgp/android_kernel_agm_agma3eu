@@ -1,0 +1,147 @@
+comment "Hisense product Infomation"
+config MACH_HISENSE_SMARTPHONE
+	bool "HISENSE SMARTPHONE"
+	default n
+	help
+	  Support for the hisense samrtphone board.
+
+config HISENSE_VENDOR_NAME
+	depends on MACH_HISENSE_SMARTPHONE
+	string "Hisense vendor info"
+	default ""
+	help
+	  The vendor name of product.
+
+config HISENSE_PRODUCT_NAME
+	depends on MACH_HISENSE_SMARTPHONE
+	string "Hisense product info"
+	default ""
+	help
+	  The product name.
+
+config HISENSE_BOOT_INFO
+	bool "Hisense Boot information"
+	depends on MACH_HISENSE_SMARTPHONE
+	default n
+	help
+	  The information of booting system.
+
+config HISENSE_DEBUG_RESUME_SUSPEND
+        bool "Hisense debug resume and suspend performance"
+        depends on MACH_HISENSE_SMARTPHONE
+        default n
+        help
+          The way to debug the resume and suspend system.
+          
+config USB_CDROM_NAME
+	string "USB CDROM Name"
+	depends on MACH_HISENSE_SMARTPHONE
+	default "HsMoCorp"
+	help
+	  hisense usb cdrom name .
+
+config USB_OTG_DOUBLE_CHECK
+	bool "check OTG ID from PM and CPU"
+	depends on HISENSE_USB_FEATURE
+	default n
+	help
+	  check OTG ID from PM and CPU.
+
+config HISENSE_DEBUG_BOOT_TIME
+        bool "Hisense debug boot performance"
+        depends on MACH_HISENSE_SMARTPHONE
+        depends on HISENSE_BOOT_INFO
+        default n
+        help
+          The way to debug the boot time.
+
+config HISENSE_GPIO_UNUSED
+        bool "init the unused gpio"
+        depends on OF_GPIO
+        default n
+        help
+          init the unused gpio to pull-down and the strenth is 2ma
+
+config HISENSE_CAMLEDS_FATE_TEST
+	bool "camera flash led's FATE test node"
+	default n
+	help
+	  add flashlight for camera flash led's FATE test node.
+
+config HISENSE_TORCH_WAKEUP
+	bool "device need system wakeup when torch on from FATE TEST"
+	depends on HISENSE_CAMLEDS_FATE_TEST
+	default n
+	help
+	  device need system wakeup when torch on from FATE TEST node.
+
+config HISENSE_FUSE_STATUS
+        bool "read the fuse status for the customer."
+        default n
+        help
+          add the fuse status node to read.
+
+config HISENSE_SHOW_BOOT_LOG
+        bool "read the fuse status for the customer."
+        default n
+        help
+          add the fuse status node to read.
+
+config HISENSE_EMMC_OPS
+	bool "Hisense emmc read or write interface"
+	default n
+	help
+		Provide a methed to operate(read or write) emmc block device
+		If unsure, say N
+
+config HISENSE_DBG_CTRL_NODE
+	bool "Hisense create /sys/debug_conrol2/ node"
+	default n
+	help
+		Provide a methed to create node at /sys/debug_conrol2/
+		If unsure, say N
+
+config HISENSE_NO_SD_RAMDUMP                          
+	bool "enable no sd ramdump"                         
+	default n                                           
+	help                                                
+		enable no sd ramdump                              
+		save ramdump to internal storage(grow partition)  
+		If unsure, say N
+
+config HISENSE_LOW_BATTERY_FLASH_CTL
+	bool "enable hisense flash depend on low battery control"
+	default n
+	help
+		Enable the config if flash depend on low battery control, If unsure, say N
+
+config SUBSYS_ERR_REPORT
+	bool "report subsystem failed event by uevent"
+	default n
+	help
+	  Enable it when collect the subsystem state report
+	  if unsure, say N
+
+config HISENSE_SUSPEND_SYS_SYNC
+        bool "add the suspend sys sync to the workqueue"
+        default n
+        help
+          Enable it when the suspend/resume has some sync issue.
+          if unsure, say N
+
+config HISENSE_SERIAL_CONSOLE_CONTROL
+        bool "add the serial console control code"
+        default n
+        help
+          Enable it can control the console register for serial.
+          if unsure, say N
+		  
+config HISENSE_WAKEUP_CNT
+        bool "enable counting the wakeup times"
+        default n
+        help
+          enable counting the wakeup times
+          If unsure, say N
+
+source "drivers/soc/hisense/rs_recorder/Kconfig"
+

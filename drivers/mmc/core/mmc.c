@@ -28,7 +28,8 @@
 #include "mmc_ops.h"
 #include "sd_ops.h"
 
-
+//static char firmware_version[17] = {0};
+//static char *manufacture_name;
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
 	0,		0,		0,		0

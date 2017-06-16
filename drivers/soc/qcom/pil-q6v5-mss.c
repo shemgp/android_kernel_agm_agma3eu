@@ -43,10 +43,6 @@
 
 #define subsys_to_drv(d) container_of(d, struct modem_data, subsys_desc)
 
-#ifdef CONFIG_SUBSYS_ERR_REPORT
-extern void subsystem_report(const char *subsys_name, const char *err_log);
-#endif /* CONFIG_SUBSYS_ERR_REPORT */
-
 static void log_modem_sfr(void)
 {
 	u32 size;

@@ -13,7 +13,7 @@ my $new = shift @ARGV;
 my @find_files;
 my $find_dir;
 my $build_script;
-my $dts_path = "arch/arm/boot/dts/qcom/his";
+my $dts_path = "arch/arm/boot/dts/qcom/hisense";
 
 sub find_defconfig() {
 	if (/^${origin}_defconfig/ or /^${origin}_release_defconfig/) {

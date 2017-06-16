@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # product configure
-DEFCONFIG=agma3eu_defconfig
+DEFCONFIG=agma3_defconfig
 
 if [ "$1"z = "user"z ]; then
 	echo "Build release kernel"
-	DEFCONFIG=agma3eu_release_defconfig
+	DEFCONFIG=agma3_defconfig
 fi
 
 OUTDIR=kout

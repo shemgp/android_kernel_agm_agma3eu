@@ -12,7 +12,7 @@ RAMDISK_OFFSET="--ramdisk_offset 0x02000000"
 TAGS_OFFSET="--tags_offset 0x01E00000"
 
 # get product name
-BOARD_CFG=`cat $OUTDIR/.config | grep CONFIG_HIS_PRODUCT_NAME | sed "s/.*=\"\([A-Za-z0-9_\-]*\)\"/\1/"`
+BOARD_CFG=`cat $OUTDIR/.config | grep CONFIG_HISENSE_PRODUCT_NAME | sed "s/.*=\"\([A-Za-z0-9_\-]*\)\"/\1/"`
 
 KERNEL=$OUTDIR/arch/$TARGET_ARCH/boot/Image.gz
 RAMDISK=./bootimg/ramdisk_${BOARD_CFG}.img

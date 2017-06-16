@@ -43,6 +43,9 @@ struct irq_desc;
 struct irq_desc {
 	struct irq_data		irq_data;
 	unsigned int __percpu	*kstat_irqs;
+	#ifdef CONFIG_HISENSE_WAKEUP_CNT
+       unsigned int wakeup_cnt;
+       #endif
 	irq_flow_handler_t	handle_irq;
 #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
 	irq_preflow_handler_t	preflow_handler;

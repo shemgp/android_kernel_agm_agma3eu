@@ -38,7 +38,7 @@
 #define MDP_ROTATION 0
 #define FRAMEWORK_ROTATION 1
 extern int boot_charger_status;
-extern int boot_recovery_mode; 
+extern int boot_recovery_mode;
 //add by hisense for lcd_id
 extern char mdss_panel_lcd_id[32];
 
@@ -329,7 +329,7 @@ int mdss_dsi_panel_vci_ctrl(struct mdss_panel_data *pdata, int enable)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 	int rc = 0;
-
+	static int count = 0;
 	if (pdata == NULL) {
 		pr_err("%s: Invalid input data\n", __func__);
 		return -EINVAL;
@@ -348,8 +348,18 @@ int mdss_dsi_panel_vci_ctrl(struct mdss_panel_data *pdata, int enable)
 
 	if (enable) {
 		if (gpio_is_valid(ctrl_pdata->vci_en_gpio)) {
+			if(count == 0){
 			gpio_set_value((ctrl_pdata->vci_en_gpio), 1);
-			usleep(20 * 1000);
+			count = 1;
+			}else{
+			gpio_set_value((ctrl_pdata->vci_en_gpio), 1);
+			mdelay(20);
+			gpio_set_value((ctrl_pdata->vci_en_gpio), 0);
+			mdelay(65);
+			gpio_set_value((ctrl_pdata->vci_en_gpio), 1);
+			mdelay(10);
+			
+		}
 		}
 	} else {
 		if (gpio_is_valid(ctrl_pdata->vci_en_gpio)) {
@@ -591,6 +601,10 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	struct mdss_dsi_ctrl_pdata *sctrl = NULL;
 	static int last_level;
 	static int bl_is_low_speed = 1;
+#ifdef CONFIG_HISENSE_DEBUG_RESUME_SUSPEND
+	bool turn_on_bl = false;
+	bool turn_off_bl = false;
+#endif /* CONFIG_HISENSE_DEBUG_RESUME_SUSPEND */
 
 	if (pdata == NULL) {
 		pr_err("%s: Invalid input data\n", __func__);
@@ -599,6 +613,14 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 		panel_data);
 	
+#ifdef CONFIG_HISENSE_DEBUG_RESUME_SUSPEND
+	if((last_level == 0)&&(bl_level != 0)){
+      		resumeinfo_start(S_A_BL_ID);
+      		turn_on_bl = true;}
+	else if((last_level != 0)&&(bl_level == 0)){
+      		suspendinfo_start(S_A_BL_ID);
+      		turn_off_bl = true;}
+#endif /* CONFIG_HISENSE_DEBUG_RESUME_SUSPEND */
 
     if ((ctrl_pdata->bklt_ctrl == BL_DCS_CMD)
 			&& ctrl_pdata->dcsbl_dimspeed) {
@@ -667,6 +689,12 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 		break;
 	}
 	
+#ifdef CONFIG_HISENSE_DEBUG_RESUME_SUSPEND
+	if(turn_on_bl)
+      		resumeinfo_end(S_A_BL_ID);
+	else if(turn_off_bl)
+      		suspendinfo_end(S_A_BL_ID);
+#endif /* CONFIG_HISENSE_DEBUG_RESUME_SUSPEND */
 }
 
 static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)

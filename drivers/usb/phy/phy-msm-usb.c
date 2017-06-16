@@ -147,7 +147,7 @@ static u32 bus_freqs[USB_NUM_BUS_CLOCKS];	/* bimc, snoc, pcnoc clk */;
 static char bus_clkname[USB_NUM_BUS_CLOCKS][20] = {"bimc_clk", "snoc_clk",
 						"pcnoc_clk"};
 static bool bus_clk_rate_set;
-extern int boot_charger_status; 
+extern int boot_charger_status;
 
 static void dbg_inc(unsigned *idx)
 {
@@ -171,7 +171,6 @@ msm_otg_dbg_log_event(struct usb_phy *phy, char *event, int d1, int d2)
 	scnprintf(motg->buf[motg->dbg_idx], DEBUG_MSG_LEN,
 			"[%5lu.%06lu]: %s :%d:%d",
 			(unsigned long)t, nanosec, event, d1, d2);
-
 	motg->dbg_idx++;
 	motg->dbg_idx = motg->dbg_idx % DEBUG_MAX_MSG;
 	write_unlock_irqrestore(&motg->dbg_lock, flags);
@@ -3360,7 +3359,7 @@ static void msm_otg_sm_work(struct work_struct *w)
 		pm_runtime_get_sync(otg->phy->dev);
 		motg->pm_done = 0;
 	}
-	pr_info("%s work\n", usb_otg_state_string(otg->phy->state));
+	pr_debug("%s work\n", usb_otg_state_string(otg->phy->state));
 	msm_otg_dbg_log_event(&motg->phy, "SM WORK:",
 			otg->phy->state, motg->inputs);
 	switch (otg->phy->state) {

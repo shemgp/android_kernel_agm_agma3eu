@@ -13,7 +13,7 @@
 
 /dts-v1/;
 
-#include "agma3eu/msm8952-qrd-skum.dtsi"
+#include "agma3/msm8952-qrd-skum.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. MSM8952 QRD SKUM";

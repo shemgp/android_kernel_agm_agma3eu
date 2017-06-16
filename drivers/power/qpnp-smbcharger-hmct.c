@@ -2088,9 +2088,9 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip)
 		goto disable_parallel;
 	}
 
-	chip->target_fastchg_current_ma = chip->cfg_fastchg_current_ma / 3;
+	chip->target_fastchg_current_ma = chip->cfg_fastchg_current_ma * 2 / 3;
 	smbchg_set_fastchg_current(chip, chip->target_fastchg_current_ma);
-	pval.intval = chip->cfg_fastchg_current_ma * 2 * 1000 / 3;
+	pval.intval = chip->cfg_fastchg_current_ma * 1 * 1000 / 3;
 	parallel_psy->set_property(parallel_psy,
 			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
 
@@ -2100,9 +2100,9 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip)
 	* use system_temp_level to distribute para current.
 	*/
 	if (total_current_ma < chip->usb_tl_current_ma)
-		new_parallel_cl_ma = total_current_ma * 2 / 3;
+		new_parallel_cl_ma = total_current_ma * 1 / 3;
 	else
-		new_parallel_cl_ma = chip->usb_tl_current_ma * 2 / 3;
+		new_parallel_cl_ma = chip->usb_tl_current_ma * 1 / 3;
 
 	if (new_parallel_cl_ma == parallel_cl_ma) {
 		pr_smb(PR_INFO,
@@ -2116,7 +2116,7 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip)
 
 	taper_irq_en(chip, true);
 	chip->parallel.current_max_ma = new_parallel_cl_ma;
-	smbchg_set_usb_current_max(chip, new_parallel_cl_ma / 2);
+	smbchg_set_usb_current_max(chip, new_parallel_cl_ma * 2);
 	power_supply_set_current_limit(parallel_psy,
 				chip->parallel.current_max_ma * 1000);
 
@@ -3291,6 +3291,7 @@ static void check_battery_type(struct smbchg_chip *chip)
 optimize hvdcp charging thm, when thermal lvl is 0,
 use step current charging, every increase 10% switch the current.
 */
+/*
 static int smbchg_hvdcp_current_adjust_check(struct smbchg_chip *chip)
 {
 	int rc = 0, usbin_uv = 0;
@@ -3354,10 +3355,12 @@ static int smbchg_hvdcp_current_adjust_check(struct smbchg_chip *chip)
 				if (rc < 0)
 					dev_err(chip->dev,
 						"Couldn't set usb current rc = %d\n", rc);
-			} /*when capacity rise than 70%, resume high current charging*/
+			} //when capacity rise than 70%, resume high current charging
 	}
 	return rc;
 }
+*/
+
 static void smbchg_external_power_changed(struct power_supply *psy)
 {
 	struct smbchg_chip *chip = container_of(psy,
@@ -3415,8 +3418,8 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 	}
 	mutex_unlock(&chip->current_change_lock);
 
-	if (chip->enable_hvdcp_9v && is_usb_present(chip))
-		smbchg_hvdcp_current_adjust_check(chip);
+//	if (chip->enable_hvdcp_9v && is_usb_present(chip))
+//		smbchg_hvdcp_current_adjust_check(chip);
 
 	smbchg_vfloat_adjust_check(chip);
 

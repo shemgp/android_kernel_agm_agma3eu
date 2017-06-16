@@ -50,7 +50,6 @@ void subsystem_report(const char *subsys_name, const char *err_log)
 	if (ret)
 		pr_err("kobject_uevent_env failed: %d\n", ret);
 }
-EXPORT_SYMBOL(subsystem_report);
 
 static ssize_t test_report_show(struct kobject *kobj,
 			       struct kobj_attribute *attr, char *buf)

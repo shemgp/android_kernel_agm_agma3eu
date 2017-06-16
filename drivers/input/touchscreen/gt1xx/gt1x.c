@@ -852,7 +852,7 @@ static int factory_get_ic_fw_version(struct device *dev, char *buf)
 static int gt1x_get_fw_filename(char *buf, int size)
 {
 	strlcpy(buf, "/etc/firmware/fw_", size);
-	strlcat(buf, CONFIG_HIS_PRODUCT_NAME, size);
+	strlcat(buf, CONFIG_HISENSE_PRODUCT_NAME, size);
 	strlcat(buf, "_goodix.bin", size);
 
 	return 0;

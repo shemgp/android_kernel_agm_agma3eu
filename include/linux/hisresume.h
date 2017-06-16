@@ -27,6 +27,12 @@ S_A_BL_ID,
 S_A_MAX_ID,
 S_A_SIGN = 0x7fffffff,
 };
+#ifdef CONFIG_HISENSE_DEBUG_RESUME_SUSPEND
+void resumeinfo_start(enum s_a_id id);
+void resumeinfo_end(enum s_a_id id);
+void suspendinfo_start(enum s_a_id id);
+void suspendinfo_end(enum s_a_id id);
+#else
 static inline void resumeinfo_start(enum s_a_id id)
 {
 	return;
@@ -43,5 +49,6 @@ static inline void suspendinfo_end(enum s_a_id id)
 {
 	return;
 }
+#endif /* CONFIG_HISENSE_DEBUG_RESUME_SUSPEND */
 
 #endif

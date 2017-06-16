@@ -51,6 +51,13 @@ config OF_GPIO
 	def_bool y
 	depends on OF
 
+config HISENSE_GPIO_UNUSED
+	bool "Init The Unused Gpio"
+	depends on OF_GPIO
+	default n
+	help
+	  init the unused gpio to pull-down and the strenth is 2mA
+
 config GPIO_ACPI
 	def_bool y
 	depends on ACPI

@@ -746,10 +746,6 @@ static struct pil_reset_ops pil_ops_trusted = {
 	.proxy_unvote = pil_remove_proxy_vote,
 };
 
-#ifdef CONFIG_SUBSYS_ERR_REPORT
-extern void subsystem_report(const char *subsys_name, const char *err_log);
-#endif /* CONFIG_SUBSYS_ERR_REPORT */
-
 static void log_failure_reason(const struct pil_tz_data *d)
 {
 	u32 size;

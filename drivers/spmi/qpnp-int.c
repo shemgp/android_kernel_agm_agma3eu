@@ -632,6 +632,9 @@ static int __qpnpint_handle_irq(struct spmi_controller *spmi_ctrl,
 			name = "stray irq";
 		else if (desc->action && desc->action->name)
 			name = desc->action->name;
+		#ifdef CONFIG_HISENSE_WAKEUP_CNT
+              desc->wakeup_cnt++;
+		#endif
 
 		/* default show resume trigger source */
 		printk("%d triggered [0x%01x, 0x%02x,0x%01x] %s\n",

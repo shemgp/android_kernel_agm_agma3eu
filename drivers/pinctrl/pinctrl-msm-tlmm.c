@@ -958,6 +958,42 @@ static int msm_tlmm_gp_irq_suspend(void)
 	return 0;
 }
 
+#ifdef CONFIG_HISENSE_WAKEUP_CNT
+  
+  void msm_show_resume_irq(void)
+  {
+          unsigned long irq_flags;
+          int i, irq, intstat;
+          struct msm_tlmm_irq_chip *ic = &msm_tlmm_gp_irq;
+          struct msm_pintype_info *pinfo = ic_to_pintype(ic);
+          struct gpio_chip *gc = pintype_get_gc(pinfo);
+          int num_irqs = ic->num_irqs;
+  
+          spin_lock_irqsave(&ic->irq_lock, irq_flags);
+          for_each_set_bit(i, ic->wake_irqs, num_irqs) {
+                  intstat = msm_tlmm_get_intr_status(ic, i);
+                  if (intstat) {
+                          struct irq_desc *desc;
+                          const char *name = "null";
+  
+                          irq = msm_tlmm_gp_to_irq(gc, i);
+                          desc = irq_to_desc(irq);
+                          if (desc == NULL)
+                                  name = "stray irq";
+                          else if (desc->action && desc->action->name)
+                                  {
+                                  name = desc->action->name;
+                                  desc->wakeup_cnt++;
+                                  }
+  
+                          pr_warning("%s: %d triggered %s\n",
+                                          __func__, irq, name);
+                  }
+          }
+          spin_unlock_irqrestore(&ic->irq_lock, irq_flags);
+  }
+  
+  #endif
 
 static void msm_tlmm_gp_irq_resume(void)
 {
@@ -965,6 +1001,9 @@ static void msm_tlmm_gp_irq_resume(void)
 	unsigned long i;
 	struct msm_tlmm_irq_chip *ic = &msm_tlmm_gp_irq;
 	int num_irqs = ic->num_irqs;
+	#ifdef CONFIG_HISENSE_WAKEUP_CNT
+        msm_show_resume_irq();
+	#endif
 
 	spin_lock_irqsave(&ic->irq_lock, irq_flags);
 	for_each_set_bit(i, ic->wake_irqs, num_irqs)

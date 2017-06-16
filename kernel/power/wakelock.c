@@ -18,6 +18,7 @@
 #include <linux/rbtree.h>
 #include <linux/slab.h>
 
+#ifdef CONFIG_HISENSE_SUSPEND_SYS_SYNC
 #include <linux/syscalls.h>
 #include <linux/suspend.h>
 
@@ -25,6 +26,7 @@ static int suspend_sys_sync_count;
 static DEFINE_SPINLOCK(suspend_sys_sync_lock);
 static struct workqueue_struct *suspend_sys_sync_work_queue;
 static DECLARE_COMPLETION(suspend_sys_sync_comp);
+#endif /* CONFIG_HISENSE_SUSPEND_SYS_SYNC */
 
 static DEFINE_MUTEX(wakelocks_lock);
 
@@ -37,6 +39,7 @@ struct wakelock {
 #endif
 };
 
+#ifdef CONFIG_HISENSE_SUSPEND_SYS_SYNC
 static int __init sys_sync_queue_init(void)
 {
 	int ret = 0;
@@ -55,6 +58,7 @@ static void  __exit sys_sync_queue_exit(void)
 {
 	destroy_workqueue(suspend_sys_sync_work_queue);
 }
+#endif /* CONFIG_HISENSE_SUSPEND_SYS_SYNC */
 
 static struct rb_root wakelocks_tree = RB_ROOT;
 
@@ -292,6 +296,7 @@ int pm_wake_unlock(const char *buf)
 	return ret;
 }
 
+#ifdef CONFIG_HISENSE_SUSPEND_SYS_SYNC
 static void suspend_sys_sync(struct work_struct *work)
 {
 	pr_info("PM: Syncing filesystems...\n");
@@ -353,3 +358,4 @@ int suspend_sys_sync_wait(void)
 
 core_initcall(sys_sync_queue_init);
 module_exit(sys_sync_queue_exit);
+#endif /* CONFIG_HISENSE_SUSPEND_SYS_SYNC */

@@ -232,17 +232,21 @@ enum {
 
 extern int pm_test_level;
 
+#ifdef CONFIG_HISENSE_SUSPEND_SYS_SYNC
 extern void suspend_sys_sync_queue(void);
 extern int suspend_sys_sync_wait(void);
+#endif /* CONFIG_HISENSE_SUSPEND_SYS_SYNC */
 
 #ifdef CONFIG_SUSPEND_FREEZER
 static inline int suspend_freeze_processes(void)
 {
 	int error;
 
+#ifdef CONFIG_HISENSE_SUSPEND_SYS_SYNC
 	error = suspend_sys_sync_wait();
 	if (error)
 		return error;
+#endif /* CONFIG_HISENSE_SUSPEND_SYS_SYNC */
 
 	error = freeze_processes();
 	/*

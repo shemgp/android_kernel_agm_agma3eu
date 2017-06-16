@@ -566,6 +566,9 @@ qpnp_pon_get_all_pon_reasons(u64* pon_reasons)
 	return 0;
 }
 
+#ifdef CONFIG_HISENSE_DEBUG_RESUME_SUSPEND
+extern bool sys_enter_resume;
+#endif
 static int
 qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 {
@@ -612,6 +615,15 @@ qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 					cfg->key_code, pon_rt_sts);
 	key_status = pon_rt_sts & pon_rt_bit;
 
+#ifdef CONFIG_HISENSE_DEBUG_RESUME_SUSPEND
+
+	if((!sys_enter_resume) && pon_rt_sts && (cfg->pon_type == PON_KPDPWR)){
+		resumeinfo_start(S_A_POWERKEY_ID);
+	}
+	else if(pon_rt_sts && (cfg->pon_type == PON_KPDPWR)){
+		suspendinfo_start(S_A_POWERKEY_ID);
+	}
+#endif
 
 	if (!cfg->old_state && !key_status) {
 		input_report_key(pon->pon_input, cfg->key_code, 1);

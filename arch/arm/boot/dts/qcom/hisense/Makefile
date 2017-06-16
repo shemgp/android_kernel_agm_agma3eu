@@ -1,10 +1,10 @@
 ifeq ($(CONFIG_OF),y)
 
-ifeq ($(subst \",,$(CONFIG_HIS_PRODUCT_NAME)),)
-$(error "Please set CONFIG_HIS_PRODUCT_NAME value.")
+ifeq ($(subst \",,$(CONFIG_HISENSE_PRODUCT_NAME)),)
+$(error "Please set CONFIG_HISENSE_PRODUCT_NAME value.")
 endif
 
-dtb-y += $(subst ",,$(CONFIG_HIS_PRODUCT_NAME)).dtb
+dtb-y += $(subst ",,$(CONFIG_HISENSE_PRODUCT_NAME)).dtb
 
 DTB_LIST := $(dtb-y)
 

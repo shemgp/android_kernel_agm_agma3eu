@@ -89,6 +89,7 @@
 		synaptics,power-down;
 		synaptics,disable-gpios;
 		synaptics,button-map = <139 172 158>;
+		synaptics,fw-image-version-offset = <0x16d00>;
 	};
 	goodix@5d {
 		compatible = "goodix,gt1x";
@@ -478,7 +479,7 @@
 };
 
 #include "dsi-panel-otm1287a-booyi-720p-video.dtsi"
-#include "dsi-panel-s6e3fa3-samsung-1080p-cmd.dtsi"
+#include "dsi-panel-rm67191-edo-1080p-cmd.dtsi"
 #include "msm8952-mdss-panels.dtsi"
 
 
@@ -491,7 +492,7 @@
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 };
 
-&dsi_s6e3fa3_samsung_1080p_vid {
+&dsi_rm67191_edo_1080p_vid {
 	qcom,cont-splash-enabled;
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 };
@@ -500,7 +501,7 @@
 	pinctrl-names = "mdss_default", "mdss_sleep";
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
 	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
-	qcom,dsi-pref-prim-pan = <&dsi_s6e3fa3_samsung_1080p_vid>;
+	qcom,dsi-pref-prim-pan = <&dsi_rm67191_edo_1080p_vid>;
 	qcom,dsi-panel-bias-vreg;
 	qcom,platform-reset-gpio = <&msm_gpio 0 0>;
 	qcom,platform-vci-enable-gpio = <&msm_gpio 47 0>;
@@ -523,7 +524,7 @@
 &pmi8950_charger {
 	qcom,enable-hvdcp-9v;
 	qcom,float-voltage-mv = <4350>;
-	qcom,fastchg-current-ma = <3000>;
+	qcom,fastchg-current-ma = <2500>;
 	qcom,warm-fastchg-current-comp = <1200>;
 	qcom,cool-fastchg-current-comp = <900>;
 	qcom,warm-float-voltage-comp = <0xd>;
@@ -533,7 +534,7 @@
 	qcom,parallel-allowed-lowering-ma = <1000>;
 	qcom,stepchg_usb_current_ma_lvl1 = <1450>;
 	qcom,stepchg_soc = <5>;
-	qcom,thermal-mitigation = <2000 1000 700 700 0>;
+	qcom,thermal-mitigation = <2000 1100 700 700 0>;
 	qcom,smb1351-parallel-chg-en-gpio =  <&pmi8950_gpios 2 0x0>;
 	status = "okay";
 	/*add for pmi remove scheme*/
@@ -548,7 +549,7 @@
         qcom,batt-id-range-pct = <15>;
         #include "batterydata-hs-agma3-4v35-5400mAh.dtsi"
         #include "batterydata-hs-agma3-4v35-5600mAh.dtsi"
-  };
+    };
 };
 
 &pmi8950_charger {

@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2008-2014 Hisense, Inc.
  *
+ * Author:
+ *   kongzhiqiang <kongzhiqiang@hisense.com>
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -21,26 +23,10 @@
 #include <linux/pm.h>
 #include <asm/setup.h>
 
-#define POWERON_REASON_LEN          20
-
 int meid_is_null_flag = 1;
-EXPORT_SYMBOL_GPL(meid_is_null_flag); 
-
 int driver_log_print_flag = 0;
-EXPORT_SYMBOL_GPL(driver_log_print_flag); 
-
 /*Add for sensor ADSP mode*/
 uint8_t adsp_mode = 0;
-EXPORT_SYMBOL_GPL(adsp_mode); 
-
-char poweron_reason[POWERON_REASON_LEN];
-int boot_charger_status;
-EXPORT_SYMBOL_GPL(boot_charger_status); 
-
-int boot_ftm_mode;
-int boot_recovery_mode;
-EXPORT_SYMBOL_GPL(boot_recovery_mode); 
-EXPORT_SYMBOL_GPL(boot_ftm_mode); 
 
 #define BOOTINFO_ATTR(_name) \
 static struct kobj_attribute _name##_attr = { \
@@ -51,6 +37,15 @@ static struct kobj_attribute _name##_attr = { \
 	.show   = _name##_show,	                  \
 	.store  = NULL,	                          \
 }
+
+#define POWERON_REASON_LEN          20
+
+char poweron_reason[POWERON_REASON_LEN];
+int boot_charger_status;
+
+int boot_ftm_mode;
+int boot_recovery_mode;
+EXPORT_SYMBOL_GPL(boot_ftm_mode);
 
 static int __init powerup_reason_setup(char *p)
 {

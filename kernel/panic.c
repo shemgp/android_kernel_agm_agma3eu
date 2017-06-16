@@ -66,10 +66,6 @@ void __weak panic_smp_self_stop(void)
 		cpu_relax();
 }
 
-#ifdef CONFIG_SUBSYS_ERR_REPORT
-extern void subsystem_report(const char *subsys_name, const char *err_log);
-#endif /* CONFIG_SUBSYS_ERR_REPORT */
-
 /**
  *	panic - halt the system
  *	@fmt: The text string to print

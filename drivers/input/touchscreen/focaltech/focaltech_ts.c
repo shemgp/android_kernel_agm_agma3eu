@@ -1010,7 +1010,7 @@ static int ft5x06_get_fw_filename(struct ft5x06_ts_data *data, u8 pannel_id, cha
 
 	if (pannel_id != 0) {
 		strlcpy(buf, "fw_", size);
-		strlcat(buf, CONFIG_HIS_PRODUCT_NAME, size);
+		strlcat(buf, CONFIG_HISENSE_PRODUCT_NAME, size);
 		strlcat(buf, "_", size);
 		strlcat(buf, data->pdata->name, size);
 		snprintf(tmp, ARRAY_SIZE(tmp), "_0x%02x", pannel_id);

@@ -102,6 +102,9 @@ static inline void mark_rodata_ro(void) { }
 extern void tc_init(void);
 #endif
 
+#ifdef CONFIG_HISENSE_DEBUG_BOOT_TIME
+extern int driver_log_print_flag ;
+#endif /* CONFIG_HISENSE_DEBUG_BOOT_TIME */
 
 /*
  * Debug helper: via this flag we know that we are in 'early bootup code'
@@ -679,6 +682,12 @@ static int __init_or_module do_one_initcall_debug(initcall_t fn)
 	delta = ktime_sub(rettime, calltime);
 	duration = (unsigned long long) ktime_to_ns(delta) >> 10;
 	
+#ifdef CONFIG_HISENSE_DEBUG_BOOT_TIME
+	if(duration>20000)
+	{
+		printk("initcall %pF returned %d after %lld usecs\n",fn, ret, duration);
+	}
+#endif /* CONFIG_HISENSE_DEBUG_BOOT_TIME */
 	
 	/*pr_debug("initcall %pF returned %d after %lld usecs\n",
 		 fn, ret, duration);  */ /*delete for hisense*/
@@ -691,6 +700,12 @@ int __init_or_module do_one_initcall(initcall_t fn)
 	int count = preempt_count();
 	int ret;
 
+#ifdef CONFIG_HISENSE_DEBUG_BOOT_TIME
+        if(driver_log_print_flag==1)
+        {
+		initcall_debug=1;
+        }
+#endif /* CONFIG_HISENSE_DEBUG_BOOT_TIME */
 
 	if (initcall_debug)
 		ret = do_one_initcall_debug(fn);

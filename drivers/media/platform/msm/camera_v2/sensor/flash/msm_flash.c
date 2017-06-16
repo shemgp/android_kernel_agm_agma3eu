@@ -22,6 +22,10 @@
 #undef CDBG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
 
+#define FATE_TORCH_CUR     180
+#define FATE_FLASH_CUR     800
+
+
 /* Just for hisense picking dual chroma  leds */
 /*
 #define TUNING_DUAL_LED_DEBUG 
@@ -78,6 +82,31 @@ static struct msm_camera_i2c_fn_t msm_flash_cci_func_tbl = {
 	.i2c_util = msm_sensor_cci_i2c_util,
 	.i2c_poll =  msm_camera_cci_i2c_poll,
 };
+#ifdef CONFIG_HISENSE_LOW_BATTERY_FLASH_CTL
+#include <linux/power_supply.h>
+#define CAP_LIMIT_FOR_FLASH		15
+bool check_battery_capacity_enough(void)
+{
+	union power_supply_propval prop = {0,};
+	struct power_supply *batt_psy = power_supply_get_by_name("battery");
+	int rc , batt_soc;
+
+	rc = batt_psy->get_property(batt_psy, POWER_SUPPLY_PROP_CAPACITY, &prop);
+
+	if (rc < 0)
+		pr_err("could not read battery  capacity, rc=%d\n", rc);
+	else
+		batt_soc = prop.intval;
+
+	pr_err("check_battery_capacity_enough  capacity=%d\n", batt_soc);
+
+	if(batt_soc >= CAP_LIMIT_FOR_FLASH)
+		return true;
+	else
+		return false;
+
+}
+#endif
 
 void msm_torch_brightness_set(struct led_classdev *led_cdev,
 				enum led_brightness value)
@@ -656,15 +685,34 @@ static int32_t msm_flash_config(struct msm_flash_ctrl_t *flash_ctrl,
 		break;
 	case CFG_FLASH_LOW:
 		if (flash_ctrl->flash_state == MSM_CAMERA_FLASH_INIT) {
-
+		#ifdef CONFIG_HISENSE_LOW_BATTERY_FLASH_CTL
+		if (check_battery_capacity_enough()) {
 			rc = flash_ctrl->func_tbl->camera_flash_low(
 				flash_ctrl, flash_data);
+		} else {
+			pr_err("MSM_CAMERA_LED_LOW, don't flash\n");
+			kobject_uevent(&flash_ctrl->led_cl_dev.dev->kobj, KOBJ_CHANGE);
+		}
+		#else
+		rc = flash_ctrl->func_tbl->camera_flash_low(
+				flash_ctrl, flash_data);
+		#endif
 		}
 		break;
 	case CFG_FLASH_HIGH:
 		if (flash_ctrl->flash_state == MSM_CAMERA_FLASH_INIT) {
+		#ifdef CONFIG_HISENSE_LOW_BATTERY_FLASH_CTL
+		if (check_battery_capacity_enough()) {
 			rc = flash_ctrl->func_tbl->camera_flash_high(
 				flash_ctrl, flash_data);
+		} else {
+			pr_err("MSM_CAMERA_LED_LOW, don't flash\n");
+			kobject_uevent(&flash_ctrl->led_cl_dev.dev->kobj, KOBJ_CHANGE);
+		}
+		#else
+		rc = flash_ctrl->func_tbl->camera_flash_high(
+				flash_ctrl, flash_data);
+		#endif
 		}
 		break;
 	default:
@@ -808,6 +856,91 @@ free_gpio_conf:
 	return rc;
 }
 
+static int32_t msm_flash_get_setting(struct device_node *of_node,
+		struct msm_flash_ctrl_t *fctrl, char *name, void* data)
+{
+
+	uint32_t count = 0;
+	int i; 
+	int rc;
+	
+	CDBG("%s:%d  E.\n", __func__, __LINE__);
+
+	if (!of_node || !fctrl) {
+		pr_err("%s:%d of_node or fctrl NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}	
+	
+	if (!name || !data) {
+		pr_err("%s:%d name or data NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+	
+	if (of_get_property(of_node, name, &count)) {
+		count /= sizeof(uint32_t);
+
+		CDBG("%s:%d %s's num=%d\n", __func__, __LINE__, name, count);
+		
+		if (count > MAX_LED_TRIGGERS) {
+			pr_err("%s:%d failed\n", __func__, __LINE__);
+			rc = -EINVAL;
+			goto Error;
+		}
+		
+		rc = of_property_read_u32_array(of_node, name, data, count);
+		if (rc < 0) {
+			pr_err("%s:%d failed\n", __func__, __LINE__);
+			goto Error;
+		}
+
+		for(i = 0; i < count; i++){
+			CDBG("%s[%d] = %d\n", name, i, *((uint32_t*)data + i));	
+		}
+		
+	}
+	
+	CDBG("%s:%d  X.\n", __func__, __LINE__);
+	return 0;
+Error:
+	
+	pr_err("%s:%d return fail\n", __func__, __LINE__);
+	return  -EINVAL;
+
+}
+
+
+
+static int32_t msm_flash_get_caps(struct device_node *of_node,
+	struct msm_flash_ctrl_t *fctrl)
+{
+	int rc;
+	uint32_t count = 0;
+
+
+	CDBG("msm_flash_get_caps E.\n");
+	
+	rc = of_property_read_u32(of_node, "qcom,leds-num", &count);
+	if (rc < 0) {
+		pr_err("get qcom,leds-num failed\n");
+		fctrl->flash_num_sources = 1;
+		fctrl->torch_num_sources = 1;
+	}else{
+		fctrl->flash_num_sources = count;
+		fctrl->torch_num_sources = count;		
+	}
+
+	msm_flash_get_setting(of_node, fctrl, "qcom,flash-max-current", fctrl->flash_max_current);
+	msm_flash_get_setting(of_node, fctrl, "qcom,flash-op-current", fctrl->flash_op_current);
+	msm_flash_get_setting(of_node, fctrl, "qcom,flash-max-timeout", fctrl->flash_max_timeout);
+	msm_flash_get_setting(of_node, fctrl, "qcom,flash-op-timeout", fctrl->flash_op_timeout);
+	msm_flash_get_setting(of_node, fctrl, "qcom,torch-max-current", fctrl->torch_max_current);
+	msm_flash_get_setting(of_node, fctrl, "qcom,torch-op-current", fctrl->torch_op_current);
+	msm_flash_get_setting(of_node, fctrl, "qcom,max-duration", fctrl->flash_max_duration);
+	
+	CDBG("msm_flash_get_caps X.\n");
+
+	return 0;
+}
 
 
 static int32_t msm_flash_get_pmic_source_info(
@@ -1091,6 +1224,8 @@ static int32_t msm_flash_get_dt_data(struct device_node *of_node,
 	CDBG("%s slave_info=<0x%x 0x%x 0x%x>\n", __func__, 
 		id_info[0], id_info[1], id_info[2]);
 
+	msm_flash_get_caps(of_node, fctrl);
+
 	/*Update i2c flash driver's interface*/
 	CDBG("%s FLASH_DRIVER_I2C X.\n", __func__);
 	
@@ -1180,6 +1315,425 @@ static long msm_flash_subdev_fops_ioctl(struct file *file,
 	return video_usercopy(file, cmd, arg, msm_flash_subdev_do_ioctl);
 }
 #endif
+
+
+#ifdef CONFIG_HISENSE_CAMLEDS_FATE_TEST
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+static void msm_fate_torch_wake_lock(struct msm_flash_ctrl_t *flash_ctrl, int lock)
+{
+	if(lock){
+		/*lock wake*/
+		if (!wake_lock_active(&flash_ctrl->torch_wake_lock)) {
+			wake_lock(&flash_ctrl->torch_wake_lock);
+			CDBG("%s: torch wake lock!\n", __func__);
+		}
+	}else{
+		/*unlock wake*/
+		if (wake_lock_active(&flash_ctrl->torch_wake_lock)) {
+			wake_unlock(&flash_ctrl->torch_wake_lock);
+			CDBG("%s: torch wake unlock!\n", __func__);
+		}
+	}
+}
+#endif
+
+static void msm_fate_brightness_set(struct led_classdev *led_cdev,
+				unsigned int  value)
+{
+	int32_t i = 0;
+	struct msm_flash_ctrl_t *flash_ctrl = container_of(led_cdev, struct msm_flash_ctrl_t, led_cl_dev);
+
+	CDBG("%s: Enter.  value=%d\n", __func__, value);
+	
+	switch(value){
+		case LED_TORCH1:{
+			/* Turn off flash triggers */	
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++)
+				if (flash_ctrl->flash_trigger[i])
+					led_trigger_event(flash_ctrl->flash_trigger[i], 0);
+
+			if(flash_ctrl->torch_trigger[0])
+				led_trigger_event(flash_ctrl->torch_trigger[0],	FATE_TORCH_CUR);
+			
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 1);
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+			msm_fate_torch_wake_lock(flash_ctrl, 1);
+#endif
+		}
+		break;
+					
+		case LED_TORCH2:{
+			/* Turn off flash triggers */	
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++)
+				if (flash_ctrl->flash_trigger[i])
+					led_trigger_event(flash_ctrl->flash_trigger[i], 0);
+			
+			if(flash_ctrl->torch_trigger[1])
+				led_trigger_event(flash_ctrl->torch_trigger[1], FATE_TORCH_CUR);
+			
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 1);
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+			msm_fate_torch_wake_lock(flash_ctrl, 1);
+#endif
+		}
+		break;
+			
+		case LED_FLASH1:{
+			/* Turn off torch triggers */
+			for (i = 0; i < flash_ctrl->torch_num_sources; i++)
+				if (flash_ctrl->torch_trigger[i])
+					led_trigger_event(flash_ctrl->torch_trigger[i], 0);
+
+			if(flash_ctrl->flash_trigger[0])
+				led_trigger_event(flash_ctrl->flash_trigger[0],	FATE_FLASH_CUR);
+			
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 1);
+		}
+		break;
+		
+		case LED_FLASH2:{
+			/* Turn off torch triggers */
+			for (i = 0; i < flash_ctrl->torch_num_sources; i++)
+				if (flash_ctrl->torch_trigger[i])
+					led_trigger_event(flash_ctrl->torch_trigger[i], 0);
+
+			if(flash_ctrl->flash_trigger[1])
+				led_trigger_event(flash_ctrl->flash_trigger[1],	FATE_FLASH_CUR);
+			
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 1);			
+		}
+		break;
+
+
+		case LED_FULL:{
+			/* Turn off flash triggers */	
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++)
+				if (flash_ctrl->flash_trigger[i])
+					led_trigger_event(flash_ctrl->flash_trigger[i], 0);
+
+			
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++) {
+				if (flash_ctrl->torch_trigger[i]) {
+					led_trigger_event(flash_ctrl->torch_trigger[i], FATE_TORCH_CUR);
+				}
+			}
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 1);
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+			msm_fate_torch_wake_lock(flash_ctrl, 1);
+#endif
+		}
+		break;
+
+		case LED_FULL_FLASH:{ // 90 For Fate dual led flash 
+			/* Turn off torch triggers */
+			for (i = 0; i < flash_ctrl->torch_num_sources; i++)
+				if (flash_ctrl->torch_trigger[i])
+					led_trigger_event(flash_ctrl->torch_trigger[i], 0);
+
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++) {
+				if (flash_ctrl->flash_trigger[i]) {
+					led_trigger_event(flash_ctrl->flash_trigger[i], FATE_FLASH_CUR);
+				}
+			}		
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 1);					
+		
+		}
+		break;
+
+		
+		case LED_OFF:{
+			/* Turn off flash triggers */	
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++)
+				if (flash_ctrl->flash_trigger[i])
+					led_trigger_event(flash_ctrl->flash_trigger[i], 0);
+			
+			
+			/* Turn off torch triggers */
+			for (i = 0; i < flash_ctrl->torch_num_sources; i++)
+				if (flash_ctrl->torch_trigger[i])
+					led_trigger_event(flash_ctrl->torch_trigger[i], 0);
+
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 0);
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+			msm_fate_torch_wake_lock(flash_ctrl, 0);
+#endif
+		}
+		break;
+			
+		default:{			
+#ifdef TUNING_DUAL_LED_DEBUG
+			static int trg_cnt = 0;
+			int cnt = value / 100000000;
+			int led0_cur = 0;
+			int led1_cur = 0;
+			int j = 0;
+			
+			pr_err("%s: value=%d\n", __func__, value);
+			if(cnt){
+				/*set triger count*/
+				trg_cnt = value % 100000000;
+				pr_err("%s: set trg_cnt = %d\n", __func__, trg_cnt);
+				break;
+			}else{
+				/*set dual chroma leds current*/
+				led0_cur = value / 10000;
+				led1_cur = value % 10000;				
+				pr_err("%s: set led0_cur = %d\n", __func__, led0_cur);
+				pr_err("%s: set led1_cur = %d\n", __func__, led1_cur);
+				if(led0_cur > 1000){
+					pr_err("%s: set led0_cur = %d > max_cur 1000mA. fail!\n", __func__, led0_cur);
+					break;
+				}
+				if(led1_cur > 1000){
+					pr_err("%s: set led1_cur = %d > max_cur 1000mA. fail!\n", __func__, led1_cur);
+					break;
+				}
+			}
+
+			for(j = 0; j < trg_cnt; j++){
+				
+				if (flash_ctrl->flash_trigger[0]) {
+					led_trigger_event(flash_ctrl->flash_trigger[0], led0_cur);
+				}
+				if (flash_ctrl->flash_trigger[1]) {
+					led_trigger_event(flash_ctrl->flash_trigger[1], led1_cur);
+				}
+				if (flash_ctrl->switch_trigger)
+					led_trigger_event(flash_ctrl->switch_trigger, 1);
+
+				pr_err("%s: msleep(300)\n", __func__);
+
+				msleep(300);
+				
+				/* Turn off flash triggers */	
+				for (i = 0; i < flash_ctrl->flash_num_sources; i++)
+					if (flash_ctrl->flash_trigger[i])
+						led_trigger_event(flash_ctrl->flash_trigger[i], 0);
+
+				
+				if (flash_ctrl->switch_trigger)
+					led_trigger_event(flash_ctrl->switch_trigger, 0);
+
+				msleep(3600);
+				pr_err("%s: msleep(3600)\n",  __func__);
+			}	
+
+#else
+			
+			/* Turn off flash triggers */	
+			for (i = 0; i < flash_ctrl->flash_num_sources; i++)
+				if (flash_ctrl->flash_trigger[i])
+					led_trigger_event(flash_ctrl->flash_trigger[i], 0);
+
+
+			/* Turn off torch triggers */
+			for (i = 0; i < flash_ctrl->torch_num_sources; i++)
+				if (flash_ctrl->torch_trigger[i])
+					led_trigger_event(flash_ctrl->torch_trigger[i], 0);
+
+			if (flash_ctrl->switch_trigger)
+				led_trigger_event(flash_ctrl->switch_trigger, 0);
+#endif
+
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+			msm_fate_torch_wake_lock(flash_ctrl, 0);
+#endif
+			break;
+		}
+			
+	}
+	
+	CDBG("%s: Exit\n", __func__);
+	return;
+};
+
+
+
+static int msm_flash_create_classdev_4fate(struct platform_device *pdev,
+				void *data)
+{
+	struct msm_flash_ctrl_t *fctrl = (struct msm_flash_ctrl_t *)data;
+
+	if (!fctrl) {
+		pr_err("Invalid fctrl\n");
+		return -EINVAL;
+	}
+	fctrl->led_cl_dev.name = "flashlight";	
+	fctrl->led_cl_dev.brightness = LED_OFF;
+	fctrl->led_cl_dev.brightness_set = msm_fate_brightness_set;
+	fctrl->led_cl_dev.max_brightness = 0x7FFFFFFF;//1000;
+
+	msm_fate_brightness_set(&fctrl->led_cl_dev, LED_OFF);
+	led_classdev_register(&pdev->dev, &fctrl->led_cl_dev);
+
+	return 0;
+}
+#endif /* CONFIG_HISENSE_CAMLEDS_FATE_TEST */
+
+/**********modified by hisense for dual led torch/flash control*********/
+void msm_flash_i2c_rear_brightness_set(struct led_classdev *led_cdev,
+				unsigned int value)
+{
+	int i;
+	struct msm_flash_ctrl_t *fctrl = container_of(led_cdev, struct msm_flash_ctrl_t, led_cl_dev);
+	struct msm_flash_cfg_data_t *flash_data = NULL;
+    CDBG("%s E\n",__func__);
+    CDBG("%s value = %d led_state = %d\n",__func__,
+        value,fctrl->led_state);
+	if(fctrl){
+		if (value == LED_FULL) {
+			if(fctrl->led_state != MSM_CAMERA_LED_INIT){
+                if(fctrl->func_tbl->camera_flash_power_on){
+                    fctrl->func_tbl->camera_flash_power_on(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->func_tbl->camera_flash_low) {
+					for (i = 0; i < fctrl->torch_num_sources; i++) {
+						if (fctrl->torch_max_current[i] > 0) {
+							fctrl->torch_op_current[i] = fctrl->torch_max_current[i];
+						}
+					}
+					fctrl->func_tbl->camera_flash_low(fctrl,flash_data);
+				}
+			}
+		} else if (value == LED_FULL_FLASH) {
+			if (fctrl->led_state != MSM_CAMERA_LED_INIT) {
+                if(fctrl->func_tbl->camera_flash_power_on){
+                    fctrl->func_tbl->camera_flash_power_on(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->func_tbl->camera_flash_high) {
+					for (i = 0; i < fctrl->flash_num_sources; i++) {
+						if (fctrl->flash_max_current[i] > 0) {
+							fctrl->flash_op_current[i] = (fctrl->flash_max_current[i])/2;
+						}
+					}
+
+					fctrl->func_tbl->camera_flash_high(fctrl,flash_data);
+				}
+			}
+		} else if (value == LED_TORCH1) {
+			if (fctrl->led_state != MSM_CAMERA_LED_INIT) {
+                if(fctrl->func_tbl->camera_flash_power_on){
+                    fctrl->func_tbl->camera_flash_power_on(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->reg_setting && fctrl->reg_setting->led1_low_setting) {
+					fctrl->flash_i2c_client.i2c_func_tbl->i2c_write_table(
+						&fctrl->flash_i2c_client,
+						fctrl->reg_setting->led1_low_setting);
+				}
+
+				if(fctrl->func_tbl->camera_flash_clear_status){
+					fctrl->func_tbl->camera_flash_clear_status(fctrl);
+				}
+			}
+		}
+		else if (value == LED_TORCH2){
+			if(fctrl->led_state != MSM_CAMERA_LED_INIT){
+                if(fctrl->func_tbl->camera_flash_power_on){
+                    fctrl->func_tbl->camera_flash_power_on(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->reg_setting && fctrl->reg_setting->led2_low_setting) {
+					fctrl->flash_i2c_client.i2c_func_tbl->i2c_write_table(
+						&fctrl->flash_i2c_client,
+						fctrl->reg_setting->led2_low_setting);
+				}
+				if(fctrl->func_tbl->camera_flash_clear_status){
+					fctrl->func_tbl->camera_flash_clear_status(fctrl);
+				}
+			}
+		}
+		else if (value == LED_FLASH1){
+			if(fctrl->led_state != MSM_CAMERA_LED_INIT){
+                if(fctrl->func_tbl->camera_flash_power_on){
+                    fctrl->func_tbl->camera_flash_power_on(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->reg_setting && fctrl->reg_setting->led1_high_setting) {
+					fctrl->flash_i2c_client.i2c_func_tbl->i2c_write_table(
+						&fctrl->flash_i2c_client,
+						fctrl->reg_setting->led1_high_setting);
+			}
+				if(fctrl->func_tbl->camera_flash_clear_status){
+					fctrl->func_tbl->camera_flash_clear_status(fctrl);
+				}
+			}
+		}
+		else if (value == LED_FLASH2){
+			if(fctrl->led_state != MSM_CAMERA_LED_INIT){
+                if(fctrl->func_tbl->camera_flash_power_on){
+                    fctrl->func_tbl->camera_flash_power_on(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->reg_setting && fctrl->reg_setting->led2_high_setting) {
+					fctrl->flash_i2c_client.i2c_func_tbl->i2c_write_table(
+						&fctrl->flash_i2c_client,
+						fctrl->reg_setting->led2_high_setting);
+				}
+				if(fctrl->func_tbl->camera_flash_clear_status){
+					fctrl->func_tbl->camera_flash_clear_status(fctrl);
+				}
+			}
+		}
+		else {
+			if(fctrl->led_state != MSM_CAMERA_LED_RELEASE){
+				if (fctrl->func_tbl->camera_flash_off)
+					fctrl->func_tbl->camera_flash_off(fctrl,flash_data);
+                if(fctrl->func_tbl->camera_flash_power_down){
+                    fctrl->func_tbl->camera_flash_power_down(fctrl);
+                }
+				fctrl->func_tbl->camera_flash_release(fctrl);
+			}
+		}
+	}
+    CDBG("%s X\n",__func__);
+};
+
+void msm_flash_i2c_front_brightness_set(struct led_classdev *led_cdev,
+				enum led_brightness value)
+{
+	struct msm_flash_ctrl_t *fctrl = container_of(led_cdev, struct msm_flash_ctrl_t, led_cl_dev);
+	struct msm_flash_cfg_data_t *flash_data = NULL;
+    CDBG("%s E\n",__func__);
+    CDBG("%s value = %d flash_state = %d\n",__func__,
+        value,fctrl->flash_state);
+	if(fctrl){
+		if (value == LED_FULL) {
+			if(fctrl->led_state != MSM_CAMERA_LED_INIT){
+				if (fctrl->func_tbl->camera_flash_init)
+					fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->func_tbl->camera_flash_low)
+					fctrl->func_tbl->camera_flash_low(fctrl,flash_data);
+			}
+		}
+		else if (value == LED_FULL_FLASH){
+			if(fctrl->led_state != MSM_CAMERA_LED_INIT){
+				if (fctrl->func_tbl->camera_flash_init)
+					fctrl->func_tbl->camera_flash_init(fctrl,flash_data);
+				if (fctrl->func_tbl->camera_flash_high)
+					fctrl->func_tbl->camera_flash_high(fctrl,flash_data);
+			}
+		}
+		else {
+			if(fctrl->led_state != MSM_CAMERA_LED_RELEASE){
+				if (fctrl->func_tbl->camera_flash_off)
+					fctrl->func_tbl->camera_flash_off(fctrl,flash_data);
+				if (fctrl->func_tbl->camera_flash_release)
+					fctrl->func_tbl->camera_flash_release(fctrl);
+			}
+		}
+	}
+    CDBG("%s X\n",__func__);
+};
 
 static int msm_camera_flash_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
@@ -1324,6 +1878,13 @@ static int32_t msm_camera_flash_probe(struct platform_device *pdev)
 
 	if (flash_ctrl->flash_driver_type == FLASH_DRIVER_PMIC){
 		rc = msm_torch_create_classdev(pdev, flash_ctrl);
+#ifdef CONFIG_HISENSE_CAMLEDS_FATE_TEST
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+		wake_lock_init(&flash_ctrl->torch_wake_lock, WAKE_LOCK_SUSPEND,
+		"qpnp_torch_lock");
+#endif
+		msm_flash_create_classdev_4fate(pdev, flash_ctrl);
+#endif /* CONFIG_HISENSE_CAMLEDS_FATE_TEST */
 	}
 	CDBG("probe success\n");
 	return rc;
@@ -1408,6 +1969,13 @@ int32_t msm_flash_platform_probe(struct platform_device *pdev,
 
 	if (flash_ctrl->flash_driver_type == FLASH_DRIVER_PMIC){
 		rc = msm_torch_create_classdev(pdev, flash_ctrl);
+#ifdef CONFIG_HISENSE_CAMLEDS_FATE_TEST
+#ifdef CONFIG_HISENSE_TORCH_WAKEUP
+		wake_lock_init(&flash_ctrl->torch_wake_lock, WAKE_LOCK_SUSPEND,
+		"qpnp_torch_lock");
+#endif
+		msm_flash_create_classdev_4fate(pdev, flash_ctrl);
+#endif /* CONFIG_HISENSE_CAMLEDS_FATE_TEST */
 	}
 
 	CDBG("probe success\n");

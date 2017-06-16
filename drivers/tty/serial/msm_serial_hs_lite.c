@@ -53,6 +53,9 @@
 #include <linux/msm-bus.h>
 #include "msm_serial_hs_hwreg.h"
 
+#ifdef CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL
+#include <linux/his_emmc_ops.h>
+#endif /* CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL */
 
 /*
  * There are 3 different kind of UART Core available on MSM.
@@ -1960,11 +1963,21 @@ static struct platform_driver msm_hsl_platform_driver = {
 	},
 };
 
+#ifdef CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL
+extern int msm_serial_hsl_enable;
+#endif /* CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL */
 
 static int __init msm_serial_hsl_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL
+	if (!msm_serial_hsl_enable)
+	{
+		msm_hsl_uart_driver.cons = NULL;
+		pr_info("disable console register\n");
+	}
+#endif /* CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL */
 
 	ret = uart_register_driver(&msm_hsl_uart_driver);
 	if (unlikely(ret))
@@ -1989,7 +2002,12 @@ static void __exit msm_serial_hsl_exit(void)
 #ifdef CONFIG_SERIAL_MSM_HSL_CONSOLE
 
  
+#if defined(CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL) && defined(CONFIG_HISENSE_RELEASE_VERSION)
+	if (msm_serial_hsl_enable)
+		unregister_console(&msm_hsl_console);
+#else /* CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL */
 	unregister_console(&msm_hsl_console);
+#endif /* !CONFIG_HISENSE_SERIAL_CONSOLE_CONTROL */
 
 #endif
 	platform_driver_unregister(&msm_hsl_platform_driver);
