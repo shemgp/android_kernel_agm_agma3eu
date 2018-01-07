@@ -220,6 +220,8 @@
 
 #include "gadget_chips.h"
 
+#define CONFIG_USB_CDROM_NAME "Android"
+#define CONFIG_HIS_VENDOR_NAME "Android"
 #define CDROM_FUNCTION_NAME "cdrom"
 int cdrom_flag = 1;
 

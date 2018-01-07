@@ -78,6 +78,9 @@
 #include "f_charger.c"
 #include "debug.h"
 
+#define CONFIG_HIS_VENDOR_NAME "Android"
+#define CONFIG_HIS_PRODUCT_NAME "agma3eu"
+
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
 MODULE_LICENSE("GPL");

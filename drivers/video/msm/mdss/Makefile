@@ -29,6 +29,7 @@ obj-$(CONFIG_FB_MSM_MDSS_MDP3) += dsi-v2.o
 endif
 
 mdss-dsi-objs := mdss_dsi.o mdss_dsi_host.o mdss_dsi_cmd.o mdss_dsi_status.o
+obj-$(CONFIG_HIS_BOOT_INFO) += bootinfo.o
 mdss-dsi-objs += mdss_dsi_panel.o
 mdss-dsi-objs += msm_mdss_io_8974.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss-dsi.o

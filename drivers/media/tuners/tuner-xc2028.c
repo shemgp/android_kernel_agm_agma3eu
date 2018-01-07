@@ -1034,6 +1034,8 @@ static int generic_set_freq(struct dvb_frontend *fe, u32 freq /* in HZ */,
 	case V4L2_TUNER_RADIO:
 		/* Radio mode requires offset = 0 */
 		break;
+	case V4L2_TUNER_SDR:
+	case V4L2_TUNER_RF:
 	case V4L2_TUNER_DIGITAL_TV:
 		/*
 		 * Digital modes require an offset to adjust to the
